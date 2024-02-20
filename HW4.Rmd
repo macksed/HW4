@@ -1,0 +1,247 @@
+---
+title: "Homework 4"
+author: "Arjun Yenamandra - SDS 315 UT Austin"
+
+
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(fig.height=4, fig.width=7, warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60), warning = FALSE, message = FALSE)
+```
+eid: ay7654
+github: [https://github.com/macksed/HW4](https://github.com/macksed/HW4)
+```{r, echo=FALSE, results='hide'}
+library(tidyverse)
+library(ggplot2)
+library(mosaic)
+```
+# **Question 1**
+### **A)** 
+Claim: Gas stations charge more if they lack direct competition in sight.
+Evidence: We can first look at a histogram of price data between gas stations with and without competitors. This is not enough to validate or argue against the claim, but it can provide some visualization to understand the two sides of the claim. 
+
+
+
+
+```{r echo=FALSE}
+gasprices <- read.csv("gasprices.csv")
+```
+
+```{r echo=FALSE}
+ggplot(data = gasprices) + 
+  geom_histogram(aes(x = Price), binwidth = .01) + 
+  facet_wrap(~Competitors, nrow=2)
+
+
+
+competitorsboot <- do(10000) * diffmean(Price ~ Competitors, data=mosaic::resample(gasprices))
+confint(competitorsboot, level = 0.95)
+```
+Now to deal with uncertainty, we bootstrap and create a confidence interval for the mean difference of gas stations with/without direct competitors. If the interval were to include 0, we can assume that there is not a significant difference in price. 
+With the calculated confidence interval, we can say that the difference in means between gas stations with/without direct competitors is between -0.055 and 0.0072, with 95% confidence. 
+Conclusion: As our interval includes 0, we can assume that there is not a significant difference in price among gas stations in terms of having a direct competitor. Thus, the theory is unsupported by the data.
+
+
+### **B)** 
+Claim: The richer the area, the higher the gas prices.
+Evidence: 
+First, I decided to scale down the incomes by a factor of 1000, in order to more clearly see the differences in price vs Income of area. We can first use a scatterplot to visualize the data in this scaled format.
+```{r echo=FALSE}
+gaspricescaled <- gasprices %>%
+  mutate(Income = Income / 1000)
+ggplot(gaspricescaled) + geom_point(aes(x=Income, y=Price))
+```
+
+
+
+
+This doesn't seem to show much correlation, regardless we must bootstrap and create a confidence interval to get hard evidence.
+```{r echo=FALSE}
+
+zipboot = do(10000)*cor(Price ~ Income, data=mosaic::resample(gaspricescaled))
+confint(zipboot, level = 0.95)
+```
+We can see the confidence interval of the correlation We're 95% confident that the population correlation of gas price and Income(richer area) is somewhere between 0.196  and 0.567. This is accepted as a positive correlation, and since it is much above 0, there is strength for the correlations in the interval.
+Conclusion:
+I believe that this is both statistically and practically significant. As we do not contain 0 in our correlation interval, we have basis for statistical significance. This interval of correlation is reliable, and at shows at least some positive correlation between gas price and income of an area. Since this correlation exists, we can infer than as areas are richer, the gas prices are more expensive. Thus, the theory is supported by the data.
+
+### **C)**
+Claim: Gas stations at stoplights charge more.
+Evidence:
+```{r echo=FALSE}
+ggplot(data = gasprices) + 
+  geom_histogram(aes(x = Price), binwidth = .01) + 
+  facet_wrap(~Stoplight, nrow=2)
+
+```
+We can first visualize the data. Just by looking at the distributions of stoplight vs no stoplight, we can notice there isn't too much of a difference in gas pricing.
+
+```{r echo=FALSE}
+stoplightboot <- do(10000) * diffmean(Price ~ Stoplight, data=mosaic::resample(gasprices))
+confint(stoplightboot, level = 0.95)
+```
+We can bootstrap and perform a confidence interval to better understand the differences in pricing. Looking at this interval, we can be  95% confident that the difference in mean pricing among gas stations at and not at stoplights is between -0.0388 and 0.0311.
+Conclusion: Since the 95% confidence interval contains 0, we have statistically significant evidence to claim that the theory is unsupported by the data.
+
+### **D)** 
+Claim: Gas stations with direct highway access charge more.
+Evidence:
+
+```{r echo=FALSE}
+ggplot(data = gasprices) + 
+  geom_histogram(aes(x = Price), binwidth = .01) + 
+  facet_wrap(~Highway, nrow=2)
+```
+
+
+
+
+
+If we start by visualizing, we can see that there may be a difference in gas prices, but we don't have any concrete info.
+We can then bootstrap and perform a confidence interval to understand the mean differences among pricing on and off the highway.
+
+```{r echo=FALSE}
+highwayboot <- do(10000) * diffmean(Price ~ Highway, data=mosaic::resample(gasprices))
+confint(highwayboot, level = 0.95)
+```
+Using this interval, we are 95% confident that the mean difference of gas prices among stations with and without highway access are between 0.009 and 0.08 dollars. 
+Conclusion:
+While 0 is not in the interval, and thus on the basis of statistical significance, the theory has ample evidence to support it, we must look at practical significance. The largest of tanks can hold ~50 gallons worth of gasoline. With the upper end of our interval, this means that 0.08/8 cents would only create a mean difference of ~$4 per gas station visit. This number is nowhere near significant as the average car tank will not be able to hold as much gasoline, and the mean difference is likely less than 0.08(given our 95% interval.)
+As this number is practically insignificant, direct highway access has an insignificant effect on gas price. Thus, the theory is unsupported by the data.
+
+### **E)** 
+Claim: Shell charges more than all other non-Shell brands.
+Evidence:
+```{r echo=FALSE}
+brands <- gasprices %>%
+  mutate(Brand = ifelse(Brand != "Shell", "NShell", Brand))
+
+ggplot(data = brands) + 
+  geom_histogram(aes(x = Price), binwidth = .01) + 
+  facet_wrap(~Brand, nrow=2)
+
+```
+
+
+
+
+
+If we start by visualizing the difference, we see that there isn't much difference in shell and other brands. 
+```{r echo=FALSE}
+shellboot <- do(10000) * diffmean(Price ~ Brand, data=mosaic::resample(brands))
+confint(shellboot, level = 0.95)
+
+```
+After bootstrapping and creating a confidence interval, we can be 95% that the difference in mean gas price among Shell and non-Shell brands is between -0.0093 and 0.0648 dollars.
+Conclusion:
+As the confidence interval contains 0, there is statistically significant evidence to disprove the theory. Shell does not charge more than other brands. Thus, the theory is unsupported by the data.
+
+
+# **Question 2**
+### **A**
+```{r echo=FALSE}
+sclass <- read.csv("sclass.csv")
+```
+
+```{r echo=FALSE}
+sclassA <- sclass %>% filter(year == "2011" & trim=="63 AMG")
+```
+
+```{r echo=FALSE}
+amgboot <- do(10000) * mean(mosaic::resample(sclassA)$mileage)
+confint(amgboot, level=0.95)
+```
+Looking at the CI, we can be 95% confident that the mileage for our selected group is between 26300 and 31800 miles. Our selected group represents all 2011 63 AMG Merceded S-Class that were hitting the used car market at the time of data collection.
+
+
+
+### **B**
+```{r echo=FALSE}
+sclassB <- sclass %>%
+  filter(year == 2014, trim == "550")
+
+sclassB <- sclassB %>%
+  mutate(isBlack = ifelse(color == "Black", TRUE, FALSE))
+
+
+
+# bootstrap resampling for CI
+bootB <- do(10000) * prop(mosaic::resample(sclassB)$isBlack, data=mosaic::resample(sclassB))
+confint(bootB, level=0.95)
+
+```
+After performing the CI, we can be 95% confident that the proportion of all 2014 S-Class 550's that were painted black is between 0.416 and 0.453. 
+
+
+
+
+
+# **Question 3**
+
+
+
+### **A**
+```{r echo=FALSE}
+nbc <- read.csv("nbc_pilotsurvey.csv")
+nbced <- nbc %>% filter(Show == "Living with Ed" |
+Show == "My Name is Earl")
+```
+Our question is if one show consistently produces a higher mean Q1_Happy response among viewers. I approach this by using the diffmean function and bootstrapping 10000 times to relate to the entire viewer population, and use resample to do so. I then can make a confidence interval using the confint function.
+```{r echo=FALSE}
+happyboot <- do(10000) * diffmean(Q1_Happy~Show, data = mosaic::resample(nbced))
+confint(happyboot, level=0.95)
+```
+
+After performing our bootstrapped 95% confidence interval, we can be 95% confident that the difference of mean ratings between the show for Q1_Happy is between -0.4 and 0.1. Since 0 is in the interval, we cannot say that one show consistently produces a higher mean rating for Q1_Happy.
+
+### **B**
+```{r echo=FALSE}
+nbcloser <- nbc %>% filter(Show == "The Biggest Loser" | Show == "The Apprentice: Los Angeles")
+```
+Our question is if one show made people more annoyed, by looking if one show consistently produces a higher mean Q1_Annoyed response among
+viewers. I approach by using diffmean and performing a bootstrap resample to assess the entire population. I then can use this to create a confidence interval with confint.
+```{r echo=FALSE}
+annoyboot <- do(10000) * diffmean(Q1_Annoyed~Show, data = mosaic::resample(nbcloser))
+confint(annoyboot, level=0.95)
+```
+We are 95% confident that the mean difference for Q1_Annoyed is between -0.52 and -0.014. As this does not include 0 and goes as high as -0.52, we can infer that one show annoys viewers more. 
+Yes, it looks like one show scores consistently higher than another. There is evidence that one show consistently produces a higher mean in Q1_annoyed.
+
+
+### **C**
+```{r echo=FALSE}
+
+nbcstar <- nbc %>%
+  filter(Show == "Dancing with the Stars")
+nbcstar <- nbcstar%>%
+  mutate(confused = ifelse(Q2_Confusing >= 4, TRUE, FALSE))
+prop(nbcstar$confused)
+bootconfused <- do(10000) * prop(mosaic::resample(nbcstar)$confused, data=mosaic::resample(nbcstar))
+confint(bootconfused, level=0.95)
+```
+Here we are trying to understand what proportion of viewers of "Dancing with the Stars" are confused. This defined through the Q2_Confused variable, where a score of 4 or higher results in a viewer being "Confused". To solve for this, we can set responses that are greater than or equal to 4 for that variable. Once we have mutated the existing dataset with this T/F indication, we can apply the prop function and use the resample function from mosaic in order to create a confidence interval for the proportion.
+Once we have created our bootstrap with 10,000 iterations, we create our confidence interval using the confint function. This tells us that we are 95% that the proportion of viewers that were confused watching "Dancing with the Stars" is between 3.86% and 11.6%. Thus, with 95% confidence, we can assume that the proportion of viewers who will find the show confusing(give Q2_Confusing a score of 4 or higher) are in this interval. 
+
+
+# **Question 4**
+
+```{r echo=FALSE}
+ebay <- read.csv("ebay.csv")
+```
+Our question is assessing whether the revenue ratio is the same in the treatment and control groups, or whether instead the data favors the idea that paid search advertising on Google creates extra revenue for EBay. This can be done first by calculating the revenue ratio(revenue before / revenue after treatment). Once we have this ratio, we can use diffmean to find the difference in our mean revenue ratio across the treatment and control groups. Using this, we can bootstrap resample 10,000 times and create a 95% confidence interval.
+
+```{r echo=FALSE}
+treatment <- filter(ebay, adwords_pause == 1)
+control <- filter(ebay, adwords_pause == 0)
+
+
+revboot <- do(10000) * diffmean(rev_ratio~adwords_pause, data = mosaic::resample(ebay))
+confint(revboot, level=0.95)
+```
+Now that we have our confidence interval, we are 95% confident that the difference in mean revenue ratio across the treatment and control groups is between -0.09 and -0.01. As this is statistically significant, this interval may be practically insignificant when accounting for mean difference. A difference of <10% in revenue ratio is somewhat insignificant. Yet in the  overall market, 1 to 10% difference in revenue ratio can be a significant to total EBay revenue. 
+With this interval, we can understand that paid search advertising may be significant towards overall Ebay revenue. 
+The treatment group's revenue ratio is not "systematically lower" than the control group, and the groups are similar in mean ratio. The data favors the idea that paid search advertising creates some extra revenue for Ebay. A 10% difference can be monumental in some DMA's, while insignificant in others, but even a difference of 1% for all of EBay is huge given its scale.
